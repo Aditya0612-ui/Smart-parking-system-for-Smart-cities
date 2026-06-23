@@ -1,0 +1,303 @@
+[
+    {
+        "id": "ui_tab_parking",
+        "type": "ui_tab",
+        "name": "Smart Parking Control Center",
+        "icon": "dashboard",
+        "order": 1
+    },
+    {
+        "id": "ui_group_stats",
+        "type": "ui_group",
+        "name": "Live Occupancy Statistics",
+        "tab": "ui_tab_parking",
+        "order": 1,
+        "disp": true,
+        "width": "6"
+    },
+    {
+        "id": "ui_group_grid",
+        "type": "ui_group",
+        "name": "Live Sensor Grid Map",
+        "tab": "ui_tab_parking",
+        "order": 2,
+        "disp": true,
+        "width": "12"
+    },
+    {
+        "id": "ui_group_actions",
+        "type": "ui_group",
+        "name": "Manage Bookings & Cancellations",
+        "tab": "ui_tab_parking",
+        "order": 3,
+        "disp": true,
+        "width": "6"
+    },
+    {
+        "id": "mqtt_broker_watson",
+        "type": "mqtt-broker",
+        "name": "IBM Watson IoT Platform",
+        "broker": "your_org_id.messaging.internetofthings.ibmcloud.com",
+        "port": "1883",
+        "clientid": "a:your_org_id:node_red_app",
+        "autoConnect": true,
+        "usetls": false,
+        "compatmode": true,
+        "keepalive": "60",
+        "cleansession": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": "",
+        "closeTopic": "",
+        "closeQos": "0",
+        "closePayload": "",
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": ""
+    },
+    {
+        "id": "mqtt_in_status",
+        "type": "mqtt in",
+        "name": "Receive Parking Status",
+        "topic": "iot-2/type/your_device_type/id/your_device_id/evt/status/fmt/json",
+        "qos": "1",
+        "datatype": "auto",
+        "broker": "mqtt_broker_watson",
+        "x": 160,
+        "y": 140,
+        "wires": [
+            [
+                "json_parser"
+            ]
+        ]
+    },
+    {
+        "id": "json_parser",
+        "type": "json",
+        "name": "Parse JSON Payload",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 380,
+        "y": 140,
+        "wires": [
+            [
+                "func_extract_avail",
+                "func_extract_occ_stats",
+                "ui_template_grid"
+            ]
+        ]
+    },
+    {
+        "id": "func_extract_avail",
+        "type": "function",
+        "name": "Extract Available Count",
+        "func": "msg.payload = msg.payload.available_spots;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 620,
+        "y": 100,
+        "wires": [
+            [
+                "ui_gauge_avail"
+            ]
+        ]
+    },
+    {
+        "id": "ui_gauge_avail",
+        "type": "ui_gauge",
+        "name": "Available Bays",
+        "group": "ui_group_stats",
+        "order": 1,
+        "width": "6",
+        "height": "4",
+        "gtype": "gage",
+        "title": "Available Bays",
+        "label": "bays free",
+        "format": "{{value}}",
+        "min": 0,
+        "max": 12,
+        "colors": [
+            "#e74c3c",
+            "#f1c40f",
+            "#2ecc71"
+        ],
+        "seg1": "3",
+        "seg2": "8",
+        "x": 860,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "func_extract_occ_stats",
+        "type": "function",
+        "name": "Format Stats Label",
+        "func": "msg.payload = \"Occupied Bays: \" + msg.payload.occupied_spots + \" | Available: \" + msg.payload.available_spots + \" (Total: \" + msg.payload.total_spots + \")\";\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 610,
+        "y": 160,
+        "wires": [
+            [
+                "ui_text_stats"
+            ]
+        ]
+    },
+    {
+        "id": "ui_text_stats",
+        "type": "ui_text",
+        "name": "Live Stats Feed",
+        "group": "ui_group_stats",
+        "order": 2,
+        "width": "6",
+        "height": "2",
+        "format": "{{msg.payload}}",
+        "layout": "col-center",
+        "x": 860,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "ui_template_grid",
+        "type": "ui_template",
+        "name": "Grid Map Visualizer",
+        "group": "ui_group_grid",
+        "order": 1,
+        "width": "12",
+        "height": "6",
+        "format": "<div style=\"font-family: 'Segoe UI', sans-serif; text-align: center;\">\n    <h3 style=\"color:#2c3e50; margin-bottom: 15px;\">Live Parking Sensor Grid Map</h3>\n    <div style=\"display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;\">\n        <div ng-repeat=\"(key, spot) in msg.payload.spots\" \n             style=\"padding: 20px; border-radius: 8px; color: white; font-weight: bold; text-align: center; box-shadow: inset 0 0 5px rgba(0,0,0,0.2); transition: all 0.3s ease;\"\n             ng-class=\"spot.status === 'Available' ? 'spot-avail' : 'spot-occ'\">\n            BAY {{ key | number:2 }}<br><br>\n            <span ng-if=\"spot.status === 'Available'\">【 FREE 】</span>\n            <span ng-if=\"spot.status !== 'Available'\">{{ spot.car_no }}</span>\n        </div>\n    </div>\n</div>\n\n<style>\n    .spot-avail { background-color: #2ecc71; border: 2px solid #27ae60; }\n    .spot-occ { background-color: #e74c3c; border: 2px solid #c0392b; }\n</style>",
+        "storeOutMessages": true,
+        "fwdInMessages": true,
+        "templateScope": "local",
+        "x": 610,
+        "y": 220,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "ui_form_book",
+        "type": "ui_form",
+        "name": "Book Parking Bay",
+        "label": "Reserve a Bay",
+        "group": "ui_group_actions",
+        "order": 1,
+        "width": "6",
+        "height": "4",
+        "options": [
+            {
+                "label": "Select Slot ID (1-12)",
+                "value": "slot_id",
+                "type": "number",
+                "required": true
+            },
+            {
+                "label": "Vehicle Registration Number",
+                "value": "car_no",
+                "type": "text",
+                "required": true
+            }
+        ],
+        "formValue": {
+            "slot_id": "",
+            "car_no": ""
+        },
+        "payload": "",
+        "submit": "Submit Booking",
+        "cancel": "Reset",
+        "topic": "book",
+        "x": 150,
+        "y": 320,
+        "wires": [
+            [
+                "func_format_book_cmd"
+            ]
+        ]
+    },
+    {
+        "id": "func_format_book_cmd",
+        "type": "function",
+        "name": "Format Book Command",
+        "func": "var raw = msg.payload;\nmsg.payload = {\n    slot_id: parseInt(raw.slot_id),\n    car_no: raw.car_no.trim().toUpperCase()\n};\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 390,
+        "y": 320,
+        "wires": [
+            [
+                "mqtt_out_book"
+            ]
+        ]
+    },
+    {
+        "id": "mqtt_out_book",
+        "type": "mqtt out",
+        "name": "Publish Book Command",
+        "topic": "iot-2/type/your_device_type/id/your_device_id/cmd/book/fmt/json",
+        "qos": "1",
+        "retain": "false",
+        "broker": "mqtt_broker_watson",
+        "x": 650,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "ui_form_cancel",
+        "type": "ui_form",
+        "name": "Cancel Booking / Checkout",
+        "label": "Vacate a Bay",
+        "group": "ui_group_actions",
+        "order": 2,
+        "width": "6",
+        "height": "3",
+        "options": [
+            {
+                "label": "Select Slot ID to Vacate (1-12)",
+                "value": "slot_id",
+                "type": "number",
+                "required": true
+            }
+        ],
+        "formValue": {
+            "slot_id": ""
+        },
+        "payload": "",
+        "submit": "Checkout Vehicle",
+        "cancel": "Reset",
+        "topic": "cancel",
+        "x": 180,
+        "y": 400,
+        "wires": [
+            [
+                "func_format_cancel_cmd"
+            ]
+        ]
+    },
+    {
+        "id": "func_format_cancel_cmd",
+        "type": "function",
+        "name": "Format Cancel Command",
+        "func": "var raw = msg.payload;\nmsg.payload = {\n    slot_id: parseInt(raw.slot_id)\n};\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 410,
+        "y": 400,
+        "wires": [
+            [
+                "mqtt_out_cancel"
+            ]
+        ]
+    },
+    {
+        "id": "mqtt_out_cancel",
+        "type": "mqtt out",
+        "name": "Publish Cancel Command",
+        "topic": "iot-2/type/your_device_type/id/your_device_id/cmd/cancel/fmt/json",
+        "qos": "1",
+        "retain": "false",
+        "broker": "mqtt_broker_watson",
+        "x": 670,
+        "y": 400,
+        "wires": []
+    }
+]

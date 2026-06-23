@@ -1,0 +1,11 @@
+# IBM Watson IoT Platform Device Configuration
+# Replace these placeholders with your actual IBM Cloud Watson IoT credentials
+identity:
+  orgId: "your_org_id"
+  typeId: "your_device_type"
+  deviceId: "your_device_id"
+auth:
+  token: "your_auth_token"
+options:
+  domain: "internetofthings.ibmcloud.com"
+  logLevel: "info"
