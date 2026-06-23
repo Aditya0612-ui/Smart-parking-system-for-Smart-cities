@@ -1,4 +1,4 @@
-# IoT-Based Smart City Parking Management System
+# Smart City Parking Management System
 
 This project implements a web-based **Smart City Parking Management System** that simulates real-time, automated parking infrastructure. Parking slots are treated as digital IoT nodes that monitor occupancy, automate vehicle check-in/checkout, sync with the **IBM Watson IoT Platform**, and interface with a **Node-RED Web Dashboard**.
 
